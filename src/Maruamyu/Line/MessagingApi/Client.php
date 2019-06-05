@@ -76,19 +76,9 @@ class Client
 
         $data = [
             'replyToken' => $replyToken,
-            'messages' => [],
+            'messages' => static::normalizeMessagesParameter($messages),
             'notificationDisabled' => $notificationDisabled,
         ];
-        foreach ($messages as $message) {
-            if ($message instanceof Message\MessageInterface) {
-                $data['messages'][] = $message->toArray();
-            } elseif (is_array($message)) {
-                $data['messages'][] = $message;
-            } else {
-                # throw new \RuntimeException('invalid message type');
-                continue;
-            }
-        }
         $requestBody = json_encode($data, JSON_UNESCAPED_SLASHES);
 
         $headers = [
@@ -125,19 +115,9 @@ class Client
 
         $data = [
             'to' => $recipient,
-            'messages' => [],
+            'messages' => static::normalizeMessagesParameter($messages),
             'notificationDisabled' => $notificationDisabled,
         ];
-        foreach ($messages as $message) {
-            if ($message instanceof Message\MessageInterface) {
-                $data['messages'][] = $message->toArray();
-            } elseif (is_array($message)) {
-                $data['messages'][] = $message;
-            } else {
-                # throw new \RuntimeException('invalid message type');
-                continue;
-            }
-        }
         $requestBody = json_encode($data, JSON_UNESCAPED_SLASHES);
 
         $headers = [
@@ -184,19 +164,9 @@ class Client
 
         $data = [
             'to' => $userIdList,
-            'messages' => [],
+            'messages' => static::normalizeMessagesParameter($messages),
             'notificationDisabled' => $notificationDisabled,
         ];
-        foreach ($messages as $message) {
-            if ($message instanceof Message\MessageInterface) {
-                $data['messages'][] = $message->toArray();
-            } elseif (is_array($message)) {
-                $data['messages'][] = $message;
-            } else {
-                # throw new \RuntimeException('invalid message type');
-                continue;
-            }
-        }
         $requestBody = json_encode($data, JSON_UNESCAPED_SLASHES);
 
         $headers = [
@@ -385,5 +355,25 @@ class Client
     protected static function getEndpointUri($path)
     {
         return new Uri(static::API_ENDPOINT_ROOT . $path);
+    }
+
+    /**
+     * @param Message\MessageInterface[]|array[] $messages
+     * @return array[]
+     */
+    protected static function normalizeMessagesParameter(array $messages)
+    {
+        $converted = [];
+        foreach ($messages as $message) {
+            if ($message instanceof Message\MessageInterface) {
+                $converted[] = $message->toArray();
+            } elseif (is_array($message)) {
+                $converted[] = $message;
+            } else {
+                # throw new \RuntimeException('invalid message type');
+                continue;
+            }
+        }
+        return $converted;
     }
 }
