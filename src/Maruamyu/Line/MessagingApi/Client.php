@@ -54,9 +54,10 @@ class Client
     /**
      * @param string $replyToken
      * @param array $messages
+     * @param boolean $notificationDisabled
      * @return boolean
      */
-    public function sendReplyMessage($replyToken, array $messages)
+    public function sendReplyMessage($replyToken, array $messages, $notificationDisabled = false)
     {
         if (count($messages) < 1) {
             # throw new \InvalidArgumentException('messages is empty.');
@@ -76,6 +77,7 @@ class Client
         $data = [
             'replyToken' => $replyToken,
             'messages' => [],
+            'notificationDisabled' => $notificationDisabled,
         ];
         foreach ($messages as $message) {
             if ($message instanceof Message\MessageInterface) {
@@ -101,9 +103,10 @@ class Client
     /**
      * @param string $recipient
      * @param array $messages
+     * @param boolean $notificationDisabled
      * @return boolean
      */
-    public function sendPushMessage($recipient, array $messages)
+    public function sendPushMessage($recipient, array $messages, $notificationDisabled = false)
     {
         if (count($messages) < 1) {
             # throw new \InvalidArgumentException('messages is empty.');
@@ -123,6 +126,7 @@ class Client
         $data = [
             'to' => $recipient,
             'messages' => [],
+            'notificationDisabled' => $notificationDisabled,
         ];
         foreach ($messages as $message) {
             if ($message instanceof Message\MessageInterface) {
@@ -148,9 +152,10 @@ class Client
     /**
      * @param string[] $userIdList
      * @param array $messages
+     * @param boolean $notificationDisabled
      * @return boolean
      */
-    public function sendMulticastMessage(array $userIdList, array $messages)
+    public function sendMulticastMessage(array $userIdList, array $messages, $notificationDisabled = false)
     {
         if (count($userIdList) < 1) {
             # throw new \InvalidArgumentException('recipients is empty.');
@@ -180,6 +185,7 @@ class Client
         $data = [
             'to' => $userIdList,
             'messages' => [],
+            'notificationDisabled' => $notificationDisabled,
         ];
         foreach ($messages as $message) {
             if ($message instanceof Message\MessageInterface) {
