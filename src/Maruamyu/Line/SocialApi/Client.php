@@ -4,8 +4,7 @@ namespace Maruamyu\Line\SocialApi;
 
 use Maruamyu\Core\Http\Message\Uri;
 use Maruamyu\Core\OAuth2\AccessToken;
-use Maruamyu\Core\OAuth2\Client as OAuth2Client;
-use Maruamyu\Core\OAuth2\Settings as OAuth2Settings;
+use Maruamyu\Core\OAuth2\OpenIDProviderMetadata;
 use Maruamyu\Line\UserProfile;
 
 /**
@@ -13,7 +12,7 @@ use Maruamyu\Line\UserProfile;
  *
  * @see https://developers.line.biz/ja/reference/social-api/
  */
-class Client extends OAuth2Client
+class Client extends \Maruamyu\Core\OAuth2\Client
 {
     const API_ENDPOINT_ROOT = 'https://api.line.me/';
 
@@ -24,16 +23,25 @@ class Client extends OAuth2Client
      */
     public function __construct($channelId, $channelSecret, AccessToken $accessToken = null)
     {
-        $oAuth2Settings = new OAuth2Settings();
-        $oAuth2Settings->clientId = $channelId;
-        $oAuth2Settings->clientSecret = $channelSecret;
-        $oAuth2Settings->authorizationEndpoint = 'https://access.line.me/oauth2/v2.1/authorize';
-        $oAuth2Settings->tokenEndpoint = static::API_ENDPOINT_ROOT . 'oauth2/v2.1/token';
-        $oAuth2Settings->revocationEndpoint = static::API_ENDPOINT_ROOT . 'oauth2/v2.1/revoke';
-        $oAuth2Settings->isRequiredClientCredentialsOnRevocationRequest = true;
-        $oAuth2Settings->isUseBasicAuthorizationOnClientCredentialsRequest = false;
+        $issuer = 'https://access.line.me';
+        # $metadata = static::fetchOpenIDProviderMetadata($issuer);
+        $metadata = [
+            'issuer' => $issuer,
+            'authorization_endpoint' => $issuer . '/oauth2/v2.1/authorize',
+            'token_endpoint' => static::API_ENDPOINT_ROOT . 'oauth2/v2.1/token',
+            'jwks_uri' => static::API_ENDPOINT_ROOT . 'oauth2/v2.1/certs',
+            'response_types_supported' => ['code'],
+            'subject_types_supported' => ['pairwise'],
+            'id_token_signing_alg_values_supported' => ['ES256'],
+        ];
+        $openIDSettings = new OpenIDProviderMetadata($metadata);
+        $openIDSettings->clientId = $channelId;
+        $openIDSettings->clientSecret = $channelSecret;
+        $openIDSettings->revocationEndpoint = static::API_ENDPOINT_ROOT . 'oauth2/v2.1/revoke';
+        $openIDSettings->isRequiredClientCredentialsOnRevocationRequest = true;
+        $openIDSettings->isUseBasicAuthorizationOnClientCredentialsRequest = false;
 
-        parent::__construct($oAuth2Settings, $accessToken);
+        parent::__construct($openIDSettings, $accessToken);
     }
 
     /**
@@ -85,7 +93,7 @@ class Client extends OAuth2Client
             'access_token' => $this->accessToken->getToken(),
         ];
         $endpointUri = static::getEndpointUri('oauth2/v2.1/verify');
-        $response = $this->httpClient->request('GET', $endpointUri->withQueryString($parameters));
+        $response = $this->getHttpClient()->request('GET', $endpointUri->withQueryString($parameters));
         $buffer = strval($response->getBody());
         $tokenData = json_decode($buffer, true);
 
