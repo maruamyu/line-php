@@ -13,6 +13,7 @@ use Psr\Http\Message\StreamInterface;
  * LINE Messaging API client
  *
  * @see https://developers.line.biz/ja/reference/messaging-api/
+ * @todo グループ, トークルーム, リッチメニュー
  */
 class Client
 {
@@ -179,6 +180,43 @@ class Client
     }
 
     /**
+     * @param array $messages
+     * @param boolean $notificationDisabled
+     * @return boolean
+     */
+    public function sendBroadcastMessage(array $messages, $notificationDisabled = false)
+    {
+        if (count($messages) < 1) {
+            # throw new \InvalidArgumentException('messages is empty.');
+            return false;
+        }
+        if (count($messages) > static::MESSAGES_MAX_COUNT) {
+            # $errorMsg = 'too many messages. (max=' . static::MESSAGES_MAX_COUNT . ')';
+            # throw new \InvalidArgumentException($errorMsg);
+            return false;
+        }
+
+        $hasAccessToken = $this->reloadAccessToken();
+        if (!$hasAccessToken) {
+            return false;
+        }
+
+        $data = [
+            'messages' => static::normalizeMessagesParameter($messages),
+            'notificationDisabled' => $notificationDisabled,
+        ];
+        $requestBody = json_encode($data, JSON_UNESCAPED_SLASHES);
+
+        $headers = [
+            'Content-Type' => 'application/json',
+            # 'X-Line-Signature' => $this->makeSignature($requestBody),
+        ];
+        $endpointUri = static::getEndpointUri('bot/message/multicast');
+        $response = $this->oAuth2Client->request('POST', $endpointUri, $requestBody, $headers);
+        return $response->statusCodeIsOk();
+    }
+
+    /**
      * @param string $messageId
      * @return StreamInterface|null binary data
      */
@@ -194,6 +232,45 @@ class Client
             return $response->getBody();
         } else {
             return null;
+        }
+    }
+
+    /**
+     * @return array|null ['type' => 'none|limited', 'value' => limited]
+     */
+    public function getQuota()
+    {
+        $hasAccessToken = $this->reloadAccessToken();
+        if (!$hasAccessToken) {
+            return null;
+        }
+        $endpointUri = static::getEndpointUri('bot/message/quota');
+        $response = $this->oAuth2Client->request('GET', $endpointUri);
+        if ($response->statusCodeIsOk()) {
+            $responseBody = strval($response->getBody());
+            return json_decode($responseBody, true);
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * @return integer (return -1 if failed)
+     */
+    public function getQuotaTotalUsage()
+    {
+        $hasAccessToken = $this->reloadAccessToken();
+        if (!$hasAccessToken) {
+            return null;
+        }
+        $endpointUri = static::getEndpointUri('bot/message/quota/consumption');
+        $response = $this->oAuth2Client->request('GET', $endpointUri);
+        if ($response->statusCodeIsOk()) {
+            $responseBody = strval($response->getBody());
+            $responseData = json_decode($responseBody, true);
+            return intval($responseData['totalUsage']);
+        } else {
+            return -1;
         }
     }
 
@@ -249,6 +326,27 @@ class Client
         $hasAccessToken = $this->reloadAccessToken();
         if ($hasAccessToken) {
             $endpointUri = static::getEndpointUri('bot/message/delivery/multicast');
+            $parameters = [
+                'date' => strval($date),
+            ];
+            $response = $this->oAuth2Client->request('GET', $endpointUri->withQueryString($parameters));
+            if ($response->statusCodeIsOk()) {
+                $result = json_decode(strval($response->getBody()), true);
+            }
+        }
+        return new DeliveryStatus($date, $result);
+    }
+
+    /**
+     * @param string $date yyyyMMdd (UTC+09:00)
+     * @return DeliveryStatus
+     */
+    public function getSentBroadcastMessagesDeliveryStatus($date)
+    {
+        $result = ['status' => 'failed'];
+        $hasAccessToken = $this->reloadAccessToken();
+        if ($hasAccessToken) {
+            $endpointUri = static::getEndpointUri('bot/message/delivery/broadcast');
             $parameters = [
                 'date' => strval($date),
             ];
