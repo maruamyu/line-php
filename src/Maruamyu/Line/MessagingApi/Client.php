@@ -4,8 +4,8 @@ namespace Maruamyu\Line\MessagingApi;
 
 use Maruamyu\Core\Http\Message\Uri;
 use Maruamyu\Core\OAuth2\AccessToken;
+use Maruamyu\Core\OAuth2\AuthorizationServerMetadata;
 use Maruamyu\Core\OAuth2\Client as OAuth2Client;
-use Maruamyu\Core\OAuth2\Settings as OAuth2Settings;
 use Maruamyu\Line\UserProfile;
 use Psr\Http\Message\StreamInterface;
 
@@ -42,14 +42,11 @@ class Client
         $this->channelId = $channelId;
         $this->channelSecret = $channelSecret;
 
-        $oAuth2Settings = new OAuth2Settings();
-        $oAuth2Settings->clientId = $this->channelId;
-        $oAuth2Settings->clientSecret = $this->channelSecret;
-        $oAuth2Settings->tokenEndpoint = static::API_ENDPOINT_ROOT . 'oauth/accessToken';
-        $oAuth2Settings->revocationEndpoint = static::API_ENDPOINT_ROOT . 'oauth/revoke';
-        $oAuth2Settings->isRequiredClientCredentialsOnRevocationRequest = false;
-        $oAuth2Settings->isUseBasicAuthorizationOnClientCredentialsRequest = false;
-        $this->oAuth2Client = new OAuth2Client($oAuth2Settings, $accessToken);
+        $metadata = new AuthorizationServerMetadata();
+        $metadata->tokenEndpoint = static::API_ENDPOINT_ROOT . 'oauth/accessToken';
+        $metadata->revocationEndpoint = static::API_ENDPOINT_ROOT . 'oauth/revoke';
+
+        $this->oAuth2Client = new OAuth2Client($metadata, $channelId, $channelSecret, $accessToken);
     }
 
     /**

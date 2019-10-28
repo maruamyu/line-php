@@ -21,11 +21,11 @@ class Client extends \Maruamyu\Core\OAuth2\Client
      * @param string $channelSecret
      * @param AccessToken $accessToken
      */
-    public function __construct($channelId, $channelSecret, AccessToken $accessToken = null)
+    public static function createInstance($channelId, $channelSecret, AccessToken $accessToken = null)
     {
         $issuer = 'https://access.line.me';
         # $metadata = static::fetchOpenIDProviderMetadata($issuer);
-        $metadata = [
+        $metadataValues = [
             'issuer' => $issuer,
             'authorization_endpoint' => $issuer . '/oauth2/v2.1/authorize',
             'token_endpoint' => static::API_ENDPOINT_ROOT . 'oauth2/v2.1/token',
@@ -34,14 +34,13 @@ class Client extends \Maruamyu\Core\OAuth2\Client
             'subject_types_supported' => ['pairwise'],
             'id_token_signing_alg_values_supported' => ['ES256'],
         ];
-        $openIDSettings = new OpenIDProviderMetadata($metadata);
-        $openIDSettings->clientId = $channelId;
-        $openIDSettings->clientSecret = $channelSecret;
-        $openIDSettings->revocationEndpoint = static::API_ENDPOINT_ROOT . 'oauth2/v2.1/revoke';
-        $openIDSettings->isRequiredClientCredentialsOnRevocationRequest = true;
-        $openIDSettings->isUseBasicAuthorizationOnClientCredentialsRequest = false;
+        $metadata = new OpenIDProviderMetadata($metadataValues);
+        $metadata->revocationEndpoint = static::API_ENDPOINT_ROOT . 'oauth2/v2.1/revoke';
+        # client credential into post body
+        $metadata->supportedTokenEndpointAuthMethods = ['client_secret_post'];
+        $metadata->supportedRevocationEndpointAuthMethods = ['client_secret_post'];
 
-        parent::__construct($openIDSettings, $accessToken);
+        return new static($metadata, $channelId, $channelSecret, $accessToken);
     }
 
     /**
@@ -97,7 +96,7 @@ class Client extends \Maruamyu\Core\OAuth2\Client
         $buffer = strval($response->getBody());
         $tokenData = json_decode($buffer, true);
 
-        if (strcmp($this->settings->clientId, $tokenData['client_id']) != 0) {
+        if (strcmp($this->clientId, $tokenData['client_id']) != 0) {
             # throw new \RuntimeException('client_id not match!!');
             return null;
         }
@@ -118,7 +117,14 @@ class Client extends \Maruamyu\Core\OAuth2\Client
             return false;
         }
         # token_type_hint not required
-        return $this->requestTokenRevocation($this->accessToken->getToken(), '');
+        $request = $this->makeTokenRevocationRequest($this->accessToken->getToken());
+        $response = $this->getHttpClient()->send($request);
+        if ($response->statusCodeIsOk()) {
+            $this->accessToken = null;
+            return true;
+        } else {
+            return false;
+        }
     }
 
     /**
