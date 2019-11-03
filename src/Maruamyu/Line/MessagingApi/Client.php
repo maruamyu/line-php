@@ -45,6 +45,9 @@ class Client
         $metadata = new AuthorizationServerMetadata();
         $metadata->tokenEndpoint = static::API_ENDPOINT_ROOT . 'oauth/accessToken';
         $metadata->revocationEndpoint = static::API_ENDPOINT_ROOT . 'oauth/revoke';
+        # client credential into post body
+        $metadata->supportedTokenEndpointAuthMethods = ['client_secret_post'];
+        $metadata->supportedRevocationEndpointAuthMethods = ['client_secret_post'];
 
         $this->oAuth2Client = new OAuth2Client($metadata, $channelId, $channelSecret, $accessToken);
     }
