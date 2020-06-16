@@ -57,6 +57,7 @@ class Client extends \Maruamyu\Core\OAuth2\Client
         $endpointUri = static::getEndpointUri('v2/profile');
         $response = $this->request('GET', $endpointUri);
         if ($response->statusCodeIsOk() == false) {
+            # throw new \RuntimeException($response->getStatusCode());  # TODO
             return null;
         }
         $result = json_decode(strval($response->getBody()), true);
@@ -76,6 +77,7 @@ class Client extends \Maruamyu\Core\OAuth2\Client
         $endpointUri = static::getEndpointUri('friendship/v1/status');
         $response = $this->request('GET', $endpointUri);
         if ($response->statusCodeIsOk() == false) {
+            # throw new \RuntimeException($response->getStatusCode());  # TODO
             return false;
         }
         $buffer = strval($response->getBody());
@@ -84,28 +86,54 @@ class Client extends \Maruamyu\Core\OAuth2\Client
     }
 
     /**
-     * access token info
+     * verify access_token
+     * @see https://developers.line.biz/ja/reference/social-api/#verify-access-token
+     * @param string|null $targetAccessToken
+     * @return array|null access_token info with `iat` and `exp`
+     */
+    public function verifyAccessToken($targetAccessToken = null)
+    {
+        if (strlen($targetAccessToken) < 1) {
+            if ($this->accessToken) {
+                $targetAccessToken = $this->accessToken->getToken();
+            }
+        }
+        if (strlen($targetAccessToken) < 1) {
+            return null;
+        }
+
+        $parameters = ['access_token' => $targetAccessToken];
+        $endpointUri = static::getEndpointUri('oauth2/v2.1/verify');
+        $response = $this->getHttpClient()->request('GET', $endpointUri->withQueryString($parameters));
+        if (!($response->statusCodeIsOk())) {
+            return null;
+        }
+        $tokenData = json_decode(strval($response->getBody()), true);
+        if (isset($tokenData['error'])) {
+            return null;
+        }
+        if (strcmp($this->clientId, $tokenData['client_id']) != 0) {
+            return null;
+        }
+        $issuedAt = $response->getDate();
+        $tokenData['iat'] = $issuedAt->getTimestamp();
+        $tokenData['exp'] = $tokenData['iat'] + $tokenData['expires_in'];
+        return $tokenData;
+    }
+
+    /**
+     * @return AccessToken|null
+     * @deprecated use verifyAccessToken()
      */
     public function checkHoldingAccessToken()
     {
-        if (!($this->accessToken)) {
+        $tokenInfo = $this->verifyAccessToken();
+        if ($tokenInfo) {
+            # return new AccessToken($tokenInfo);
+            return $this->getAccessToken();
+        } else {
             return null;
         }
-        $parameters = [
-            'access_token' => $this->accessToken->getToken(),
-        ];
-        $endpointUri = static::getEndpointUri('oauth2/v2.1/verify');
-        $response = $this->getHttpClient()->request('GET', $endpointUri->withQueryString($parameters));
-        $buffer = strval($response->getBody());
-        $tokenData = json_decode($buffer, true);
-
-        if (strcmp($this->clientId, $tokenData['client_id']) != 0) {
-            # throw new \RuntimeException('client_id not match!!');
-            return null;
-        }
-
-        $this->accessToken->update($tokenData);
-        return $this->getAccessToken();
     }
 
     /**
