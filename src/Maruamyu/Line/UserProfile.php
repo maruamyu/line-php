@@ -8,16 +8,16 @@ namespace Maruamyu\Line;
 class UserProfile
 {
     /** @var string */
-    protected $displayName;
+    protected $displayName = '';
 
     /** @var string */
-    protected $userId;
+    protected $userId = '';
 
     /** @var string */
-    protected $pictureUrl;
+    protected $pictureUrl = '';
 
     /** @var string */
-    protected $statusMessage;
+    protected $statusMessage = '';
 
     /**
      * @param array $response
@@ -25,15 +25,18 @@ class UserProfile
     public function __construct(array $response = null)
     {
         if (isset($response)) {
-            $this->displayName = strval($response['displayName']);
-            $this->userId = strval($response['userId']);
-            $this->pictureUrl = strval($response['pictureUrl']);
-            $this->statusMessage = strval($response['statusMessage']);
-        } else {
-            $this->displayName = '';
-            $this->userId = '';
-            $this->pictureUrl = '';
-            $this->statusMessage = '';
+            if (isset($response['displayName'])) {
+                $this->displayName = strval($response['displayName']);
+            }
+            if (isset($response['userId'])) {
+                $this->userId = strval($response['userId']);
+            }
+            if (isset($response['pictureUrl'])) {
+                $this->pictureUrl = strval($response['pictureUrl']);
+            }
+            if (isset($response['statusMessage'])) {
+                $this->statusMessage = strval($response['statusMessage']);
+            }
         }
     }
 
