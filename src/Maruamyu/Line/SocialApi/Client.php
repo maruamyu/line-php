@@ -2,6 +2,8 @@
 
 namespace Maruamyu\Line\SocialApi;
 
+use Maruamyu\Core\Http\Message\QueryString;
+use Maruamyu\Core\Http\Message\Request;
 use Maruamyu\Core\Http\Message\Uri;
 use Maruamyu\Core\OAuth2\AccessToken;
 use Maruamyu\Core\OAuth2\OpenIDProviderMetadata;
@@ -126,6 +128,34 @@ class Client extends \Maruamyu\Core\OAuth2\Client
         } else {
             return false;
         }
+    }
+
+    /**
+     * @param string $idTokenString
+     * @param string|null $nonce
+     * @param string|null $userId
+     * @return array|null JWT payload if valid id_token, otherwise "error" response or null
+     * @see https://developers.line.biz/ja/reference/social-api/#verify-id-token
+     */
+    public function verifyIdToken($idTokenString, $nonce = null, $userId = null)
+    {
+        $parameters = [
+            'id_token' => $idTokenString,
+            'client_id' => $this->clientId,
+        ];
+        if (is_null($nonce) == false) {
+            $parameters['nonce'] = $nonce;
+        }
+        if (is_null($userId) == false) {
+            $parameters['userId'] = $userId;
+        }
+        $endpointUri = static::getEndpointUri('oauth2/v2.1/verify');
+        $request = new Request('POST', $endpointUri, QueryString::build($parameters));
+        $response = $this->getHttpClient()->send($request);
+        if (!($response->statusCodeIsOk())) {
+            return null;
+        }
+        return json_decode(strval($response->getBody()), true);
     }
 
     /**
