@@ -55,8 +55,8 @@ class Client
     /**
      * @param string $replyToken
      * @param array $messages
-     * @param boolean $notificationDisabled
-     * @return boolean
+     * @param bool $notificationDisabled
+     * @return bool
      */
     public function sendReplyMessage($replyToken, array $messages, $notificationDisabled = false)
     {
@@ -94,8 +94,8 @@ class Client
     /**
      * @param string $recipient
      * @param array $messages
-     * @param boolean $notificationDisabled
-     * @return boolean
+     * @param bool $notificationDisabled
+     * @return bool
      */
     public function sendPushMessage($recipient, array $messages, $notificationDisabled = false)
     {
@@ -133,8 +133,8 @@ class Client
     /**
      * @param string[] $userIdList
      * @param array $messages
-     * @param boolean $notificationDisabled
-     * @return boolean
+     * @param bool $notificationDisabled
+     * @return bool
      */
     public function sendMulticastMessage(array $userIdList, array $messages, $notificationDisabled = false)
     {
@@ -181,8 +181,8 @@ class Client
 
     /**
      * @param array $messages
-     * @param boolean $notificationDisabled
-     * @return boolean
+     * @param bool $notificationDisabled
+     * @return bool
      */
     public function sendBroadcastMessage(array $messages, $notificationDisabled = false)
     {
@@ -430,7 +430,7 @@ class Client
     /**
      * @param string $body
      * @param string $signature
-     * @return boolean
+     * @return bool
      */
     public function verifySignature($body, $signature)
     {

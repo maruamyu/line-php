@@ -63,6 +63,7 @@ class Client extends \Maruamyu\Core\OAuth2\Client
 
     /**
      * @return boolean
+     * @see https://developers.line.biz/ja/reference/social-api/#get-friendship-status
      */
     public function hasFriendship()
     {
